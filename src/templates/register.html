@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Register</title>
+</head>
+<body>
+    <div style="display: flex; justify-content: center;">
+        <form id="registrationForm" action="" method="post">
+            <p>
+                <label for="name">Name:</label>
+                <input type="text" name="name" id="name" required>
+            </p>
+            <p>
+                <label for="email">Email:</label>
+                <input type="email" name="email" id="email" required>
+            </p>
+            <p>
+                <label for="password">Password:</label>
+                <input type="password" name="password" id="password" required pattern="[A-Za-z0-9]{8,}">
+                <span id="passwordError" style="color:red"></span><br /><br />
+            </p>
+            <button type="submit">Sign In</button>
+        </form>
+    </div>
+</body>
+</html>
+
