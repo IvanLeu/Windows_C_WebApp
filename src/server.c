@@ -36,7 +36,7 @@ static void register_handler(const char* data) {
 	strcpy(password, token);
 	password += strlen("password=");
 
-	user_database_add_user(&global.user_db, name, email, password);
+	//user_database_add_user(&global.user_db, name, email, password);
 
 	name -= strlen("name=");
 	email -= strlen("email=");
@@ -192,7 +192,7 @@ void process_form_data(char request[MAX_BUFFER_SIZE], Post_Handler handler) {
 }
 
 void render_template(SOCKET _client, const char* filename) {
-	char folder_path[] = "../src/templates/";
+	char folder_path[] = "./src/templates/";
 
 	char path[1024];
 
