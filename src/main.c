@@ -1,13 +1,21 @@
 #include "server.h"
 #include "global.h"
+#include "database.h"
+#include "users.h"
 
 int main() {
-	global.user_db = user_database_init("users.txt");
+	
+	sqlite3* db;
+	database_connect(&db);
+
+	insert_user(db, "Bro", "BroLeu@gmail.com", "brocantguess");
 
 	Server* server;
 	server = server_init(8080);
 	server_listen(server);
 	server_shutdown(server);
+
+	database_close(db);
 
 	return 0;
 }
