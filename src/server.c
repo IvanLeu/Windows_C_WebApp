@@ -8,43 +8,47 @@
 #include "responses.h"
 #include "io.h"
 #include "global.h"
+#include "hash_table.h"
+#include "users.h"
 
+HashTable* parse_data(const char* data) {
+	if (!data)
+		return NULL;
 
-static void register_handler(const char* data) {
-	char* data_cpy = malloc(strlen(data));
+	HashTable* ht = hash_table_create();
+
+	char* data_cpy = malloc(strlen(data) + 1);
+	char* temp = data_cpy;
 	if (data_cpy == NULL)
-		return;
-
+		return NULL;
 	strcpy(data_cpy, data);
 
-	char* name = malloc(128);
-	char* email = malloc(128);
-	char* password = malloc(256);
+	char* token;
+	while ((token = strtok_s(data_cpy, "&", &data_cpy))) {
+		char* token_cpy = malloc(strlen(token) + 1);
+		char* temp = token_cpy;
+		if (token_cpy == NULL)
+			return NULL;
+		strcpy(token_cpy, token);
 
-	if (!name || !email || !password) {
-		printf("Failed to register user");
-		return;
+		char* key = strtok_s(token_cpy, "=", &token_cpy);
+		char* val = strtok_s(token_cpy, "=", &token_cpy);
+		hash_table_insert(ht, key, val);
+
+		free(temp);
 	}
 
-	char* token = strtok(data_cpy, "&");
-	strcpy(name, token);
-	name += strlen("name=");
-	token = strtok(NULL, "&");
-	strcpy(email, token);
-	email += strlen("email=");
-	token = strtok(NULL, "&");
-	strcpy(password, token);
-	password += strlen("password=");
+	free(temp);
 
-	//user_database_add_user(&global.user_db, name, email, password);
+	return ht;
+}
 
-	name -= strlen("name=");
-	email -= strlen("email=");
-	password -= strlen("password=");
+static void register_handler(const char* data) {
+	HashTable* user_table = parse_data(data);
 
-	free(name);
-	free(email);
-	free(password);
+	insert_user(global.db, hash_table_at(user_table, "name"), hash_table_at(user_table, "email"), hash_table_at(user_table, "password"));
+	
+	hash_table_delete(&user_table);
 }
 
 static bool curr_url(char request[MAX_BUFFER_SIZE], const char* path) {

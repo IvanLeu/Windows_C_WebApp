@@ -6,6 +6,7 @@ int main() {
 	
 	sqlite3* db;
 	database_connect(&db);
+	global.db = db;
 
 	Server* server;
 	server = server_init(8080);
