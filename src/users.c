@@ -43,9 +43,13 @@ void insert_user(sqlite3* db, const char* name, const char* email, const char* p
 	return;
 }
 
-void query_user(sqlite3* db, Query_Type type, const char* key)
-{
+Vector* query_user(sqlite3* db, Query_Type type, const char* key, const char* key1) {
 	char sql[256];
+
+	char hashed_password[256];
+	if (key1) {
+		hash_password(key1, hashed_password);
+	}
 
 	switch (type) {
 	case Query_By_ID:
@@ -53,6 +57,9 @@ void query_user(sqlite3* db, Query_Type type, const char* key)
 		break;
 	case Query_By_Name:
 		sprintf(sql, "SELECT * FROM users WHERE name = '%s';", key);
+		break;
+	case Query_By_Name_Password:
+		sprintf(sql, "SELECT * FROM users WHERE name = '%s' AND password = '%s';", key, hashed_password);
 		break;
 	case Query_By_Email:
 		sprintf(sql, "SELECT * FROM users WHERE email = '%s';", key);
@@ -69,11 +76,21 @@ void query_user(sqlite3* db, Query_Type type, const char* key)
 		return;
 	}
 	
+	Vector* v = vector_create();
+
 	while (sqlite3_step(stmt) == SQLITE_ROW) {
-		// process row ...
+		User* user;
+		user->id = sqlite3_column_int(stmt, 0);
+		strcpy(user->name, sqlite3_column_text(stmt, 1));
+		strcpy(user->email, sqlite3_column_text(stmt, 2));
+		strcpy(user->password, sqlite3_column_text(stmt, 3));
+
+		vector_push_back(v, user);
 	}
 
 	sqlite3_finalize(stmt);
+
+	return v;
 }
 
 bool hash_password(const char* password, char* hash) {
