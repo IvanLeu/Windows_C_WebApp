@@ -25,7 +25,6 @@ void create_users_table(sqlite3* db)
 
 void insert_user(sqlite3* db, const char* name, const char* email, const char* password)
 {
-	// TODO: Replace %40 in email with @
 	char h_password[PASSWORD_BUFF_SIZE];
 	if (!hash_password(password, h_password)) {
 		fprintf(stderr, "Hashing failed. Line: %d", __LINE__);

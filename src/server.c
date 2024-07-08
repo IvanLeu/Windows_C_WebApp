@@ -10,6 +10,7 @@
 #include "global.h"
 #include "hash_table.h"
 #include "users.h"
+#include "utils.h"
 
 HashTable* parse_data(const char* data) {
 	if (!data)
@@ -46,7 +47,12 @@ HashTable* parse_data(const char* data) {
 static void register_handler(const char* data) {
 	HashTable* user_table = parse_data(data);
 
-	insert_user(global.db, hash_table_at(user_table, "name"), hash_table_at(user_table, "email"), hash_table_at(user_table, "password"));
+	char* email = str_replace(hash_table_at(user_table, "email"), "%40", "@");
+	if (!email) {
+		email = hash_table_at(user_table, "email");
+	}
+
+	insert_user(global.db, hash_table_at(user_table, "name"), email, hash_table_at(user_table, "password"));
 	
 	hash_table_delete(&user_table);
 }
