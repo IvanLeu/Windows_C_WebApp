@@ -6,6 +6,24 @@
 
 #define PASSWORD_BUFF_SIZE 256
 
+User* create_user()
+{
+	User* user = malloc(sizeof(User));
+	user->name = malloc(256);
+	user->email = malloc(256);
+	user->password = malloc(256);
+	return user;
+}
+
+void delete_user(User* user)
+{
+	free(user->name);
+	free(user->email);
+	free(user->password);
+	free(user);
+	return;
+}
+
 void create_users_table(sqlite3* db)
 {
 	char* sql = "CREATE TABLE IF NOT EXISTS users ("
@@ -73,19 +91,20 @@ Vector* query_user(sqlite3* db, Query_Type type, const char* key, const char* ke
 	int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, 0);
 	if (rc != SQLITE_OK) {
 		fprintf(stderr, "Failed to fetch data: %s", sqlite3_errmsg(db));
-		return;
+		return NULL;
 	}
 	
-	Vector* v = vector_create();
+	Vector* v = vector_create(sizeof(User), 16);
 
 	while (sqlite3_step(stmt) == SQLITE_ROW) {
-		User* user;
+		User* user = create_user();
 		user->id = sqlite3_column_int(stmt, 0);
 		strcpy(user->name, sqlite3_column_text(stmt, 1));
 		strcpy(user->email, sqlite3_column_text(stmt, 2));
 		strcpy(user->password, sqlite3_column_text(stmt, 3));
 
 		vector_push_back(v, user);
+		delete_user(user);
 	}
 
 	sqlite3_finalize(stmt);

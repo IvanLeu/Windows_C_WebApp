@@ -19,6 +19,9 @@ typedef struct User {
 	char* password;
 } User;
 
+User* create_user();
+void delete_user(User* user);
+
 void create_users_table(sqlite3* db);
 void insert_user(sqlite3* db, const char* name, const char* email, const char* password);
 Vector* query_user(sqlite3* db, Query_Type type, const char* key, const char* key1);

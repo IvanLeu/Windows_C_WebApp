@@ -70,7 +70,7 @@ void vector_erase(Vector* v, size_t index) {
 
 	uint8_t* item_ptr = (uint8_t*)v->data + index * v->item_size;
 	uint8_t* end_ptr = (uint8_t*)v->data + v->size * v->item_size;
-	memcpy(item_ptr, end_ptr);
+	memcpy(item_ptr, end_ptr, v->item_size);
 
 	return;
 }
