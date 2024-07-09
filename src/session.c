@@ -52,6 +52,8 @@ void session_erase(sqlite3* db, const char* session_id) {
 }
 
 void generate_session_id(char* output) {
+	srand(time(NULL));
+
 	char pool[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 	for (int i = 0; i < SESSION_ID_LENGTH; i++) {
