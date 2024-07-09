@@ -68,7 +68,7 @@ static void login_handler(SOCKET client, const char* data) {
 		printf("Incorrect name or password\n");
 	}
 
-	char session_id[SESSION_ID_LENGTH];
+	char* session_id = malloc(64);
 	generate_session_id(session_id);
 
 	User* user = (User*)vector_at(queried, 0);
@@ -77,6 +77,7 @@ static void login_handler(SOCKET client, const char* data) {
 
 	vector_destroy(&queried);
 	hash_table_delete(&user_table);
+	free(session_id);
 }
 
 static bool curr_url(char request[MAX_BUFFER_SIZE], const char* path) {

@@ -11,6 +11,8 @@ typedef struct session {
 	time_t creation_time;
 } Session;
 
+void session_free_struct(Session* session);
+
 void create_sessions_table(sqlite3* db);
 void session_insert(sqlite3* db, const char* session_id, size_t user_id);
 void session_set_cookies(SOCKET client, const char* session_id);

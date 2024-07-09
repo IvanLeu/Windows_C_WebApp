@@ -17,6 +17,10 @@ User* create_user()
 
 void delete_user(User* user)
 {
+	if (!user) {
+		return;
+	}
+
 	free(user->name);
 	free(user->email);
 	free(user->password);
