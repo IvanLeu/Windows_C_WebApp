@@ -99,6 +99,8 @@ void generate_session_id(char* output) {
 	for (int i = 0; i < SESSION_ID_LENGTH; i++) {
 		output[i] = pool[rand() % strlen(pool)];
 	}
+
 	output[SESSION_ID_LENGTH] = '\0';
 
+	return;
 }
