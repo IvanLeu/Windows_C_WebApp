@@ -11,6 +11,7 @@
 #include "hash_table.h"
 #include "users.h"
 #include "utils.h"
+#include "session.h"
 
 HashTable* parse_data(const char* data) {
 	if (!data)
@@ -44,7 +45,7 @@ HashTable* parse_data(const char* data) {
 	return ht;
 }
 
-static void register_handler(const char* data) {
+static void register_handler(SOCKET sock, const char* data) {
 	HashTable* user_table = parse_data(data);
 
 	char* email = str_replace(hash_table_at(user_table, "email"), "%40", "@");
@@ -57,7 +58,7 @@ static void register_handler(const char* data) {
 	hash_table_delete(&user_table);
 }
 
-static void login_handler(const char* data) {
+static void login_handler(SOCKET client, const char* data) {
 	HashTable* user_table = parse_data(data);
 
 	Vector* queried = query_user(global.db, Query_By_Name_Password, hash_table_at(user_table, "name"), hash_table_at(user_table, "password"));
@@ -67,9 +68,12 @@ static void login_handler(const char* data) {
 		printf("Incorrect name or password\n");
 	}
 
-	//login logic... (just a test for now)
+	char session_id[SESSION_ID_LENGTH];
+	generate_session_id(session_id);
+
 	User* user = (User*)vector_at(queried, 0);
-	printf("%zu %s %s %zu\n", user->id, user->name, user->email, vector_size(queried));
+	session_insert(global.db, session_id, user->id);
+	session_set_cookies(client, session_id);
 
 	vector_destroy(&queried);
 	hash_table_delete(&user_table);
@@ -206,20 +210,20 @@ void handle_get_request(SOCKET _client, char request[MAX_BUFFER_SIZE]) {
 
 void handle_post_request(SOCKET _client, char request[MAX_BUFFER_SIZE]) {
 	if (curr_url(request, "/register")) {
-		process_form_data(request, register_handler);
+		process_form_data(_client, request, register_handler);
 		redirect(_client, "/login");
 	}
 	if (curr_url(request, "/login")) {
-		process_form_data(request, login_handler);
+		process_form_data(_client, request, login_handler);
 		redirect(_client, "/");
 	}
 }
 
-void process_form_data(char request[MAX_BUFFER_SIZE], Post_Handler handler) {
+void process_form_data(SOCKET _client, char request[MAX_BUFFER_SIZE], Post_Handler handler) {
 	char* post_body = strstr(request, "\r\n\r\n");
 	if (post_body != NULL) {
 		post_body += 4;
-		handler(post_body);
+		handler(_client, post_body);
 	}
 }
 

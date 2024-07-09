@@ -1,5 +1,6 @@
 #include "database.h"
 #include "users.h"
+#include "session.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -14,6 +15,7 @@ void database_connect(sqlite3** db)
 
 	// create required tables
 	create_users_table(*db);
+	create_sessions_table(*db);
 }
 
 void database_close(sqlite3* db)

@@ -4,7 +4,7 @@
 
 #define MAX_BUFFER_SIZE 1024
 
-typedef void (*Post_Handler)(const char* data);
+typedef void (*Post_Handler)(SOCKET socket, const char* data);
 
 typedef struct Server {
 	int port;
@@ -25,7 +25,7 @@ void server_shutdown(Server* server);
 unsigned __stdcall client_handler(SOCKET _client);
 void handle_get_request(SOCKET _client, char request[MAX_BUFFER_SIZE]);
 void handle_post_request(SOCKET _client, char request[MAX_BUFFER_SIZE]);
-void process_form_data(char request[MAX_BUFFER_SIZE], Post_Handler handler);
+void process_form_data(SOCKET _client, char request[MAX_BUFFER_SIZE], Post_Handler handler);
 
 void render_template(SOCKET _client, const char* file);
 void redirect(SOCKET _client, const char* location);
