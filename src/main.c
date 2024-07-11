@@ -3,7 +3,6 @@
 #include "database.h"
 
 int main() {
-
 	sqlite3* db;
 	database_connect(&db);
 	global.db = db;
