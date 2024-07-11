@@ -12,6 +12,7 @@
 #include "users.h"
 #include "utils.h"
 #include "session.h"
+#include "views.h"
 
 HashTable* parse_data(const char* data) {
 	if (!data)
@@ -192,17 +193,24 @@ unsigned __stdcall client_handler(SOCKET _client) {
 }
 
 void handle_get_request(SOCKET _client, char request[MAX_BUFFER_SIZE]) {
+
 	if (curr_url(request, "/")) {
-		render_template(_client, "index.html");
+		home_view(_client);
 	}
 	else if (curr_url(request, "/about")) {
-		render_template(_client, "about.html");
+		about_view(_client);
 	}
 	else if (curr_url(request, "/register")) {
-		render_template(_client, "register.html");
+		register_view(_client);
 	}
 	else if (curr_url(request, "/login")) {
-		render_template(_client, "login.html");
+		login_view(_client);
+	}
+	else if (curr_url(request, "/profile")) {
+		profile_view(_client);
+	}
+	else if (curr_url(request, "/logout")) {
+		logout_view(_client);
 	}
 	else {
 		send(_client, NOT_FOUND_RESPONSE, strlen(NOT_FOUND_RESPONSE), 0);
@@ -226,22 +234,6 @@ void process_form_data(SOCKET _client, char request[MAX_BUFFER_SIZE], Post_Handl
 		post_body += 4;
 		handler(_client, post_body);
 	}
-}
-
-void render_template(SOCKET _client, const char* filename) {
-	char folder_path[] = "./src/templates/";
-
-	char path[1024];
-
-	sprintf(path, "%s%s", folder_path, filename);
-
-	File file = io_read_file(path);
-	if (!file.is_valid) {
-		return;
-	}
-
-	send(_client, OK_RESPONSE_HTML, strlen(OK_RESPONSE_HTML), 0);
-	send(_client, file.data, file.len, 0);
 }
 
 void redirect(SOCKET _client, const char* location)
