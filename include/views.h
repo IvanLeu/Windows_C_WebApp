@@ -2,7 +2,7 @@
 #include <WinSock2.h>
 
 void render_template(SOCKET _client, const char* filename);
-void redirect(SOCKET _client, const char* location);
+void redirect(SOCKET _client, const char* location, int flag, char* session_id);
 
 void home_view(SOCKET client_socket);
 void about_view(SOCKET client_socket);

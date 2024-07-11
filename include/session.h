@@ -4,6 +4,7 @@
 #include <time.h>
 
 #define SESSION_ID_LENGTH 32
+#define SESSION_EXPIRE_TIME 36000
 
 typedef struct session {
 	char* session_id;

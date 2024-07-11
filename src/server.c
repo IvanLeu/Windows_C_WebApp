@@ -74,10 +74,11 @@ static void login_handler(SOCKET client, const char* data) {
 
 	User* user = (User*)vector_at(queried, 0);
 	session_insert(global.db, session_id, user->id);
-	session_set_cookies(client, session_id);
 
 	vector_destroy(&queried);
 	hash_table_delete(&user_table);
+
+	redirect(client, "/", 1, session_id);
 	free(session_id);
 }
 
@@ -220,11 +221,10 @@ void handle_get_request(SOCKET _client, char request[MAX_BUFFER_SIZE]) {
 void handle_post_request(SOCKET _client, char request[MAX_BUFFER_SIZE]) {
 	if (curr_url(request, "/register")) {
 		process_form_data(_client, request, register_handler);
-		redirect(_client, "/login");
+		redirect(_client, "/login", 0, 0);
 	}
 	if (curr_url(request, "/login")) {
 		process_form_data(_client, request, login_handler);
-		redirect(_client, "/");
 	}
 }
 

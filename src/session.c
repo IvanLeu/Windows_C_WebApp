@@ -1,8 +1,6 @@
 #include "session.h"
 #include <stdio.h>
 
-#define SESSION_EXPIRE_TIME 36000
-
 void session_free_struct(Session* session) {
 	if (!session) {
 		return;
@@ -44,7 +42,9 @@ void session_insert(sqlite3* db, const char* session_id, size_t user_id) {
 void session_set_cookies(SOCKET client, const char* session_id) {
 	char response[1024];
 	sprintf(response, "HTTP/1.1 200 OK\r\n"
-		"Set-Cookie: session_id=%s; Max-Age=%d\r\n\r\n",
+		"Set-Cookie: session_id=%s; Max-Age=%d\r\n"
+		"Content-Length: 0\r\n"
+		"Content-Type: text/plain\r\n\r\n",
 		session_id, SESSION_EXPIRE_TIME);
 	send(client, response, 1024, 0);
 }
