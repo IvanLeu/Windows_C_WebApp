@@ -79,6 +79,7 @@ Session* session_query(sqlite3* db, const char* session_id) {
 }
 
 Session* get_session_from_cookies(sqlite3* db, char* request) {
+
 	char* cookie_header = strstr(request, "Cookie: ");
 	if (!cookie_header) {
 		printf("Failed to fetch cookie data");
