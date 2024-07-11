@@ -17,5 +17,6 @@ void create_sessions_table(sqlite3* db);
 void session_insert(sqlite3* db, const char* session_id, size_t user_id);
 void session_set_cookies(SOCKET client, const char* session_id);
 Session* session_query(sqlite3* db, const char* session_id);
+Session* get_session_from_cookies(sqlite3* db, char* request);
 void session_erase(sqlite3* db, const char* session_id);
 void generate_session_id(char* output);

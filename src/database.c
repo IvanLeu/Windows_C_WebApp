@@ -8,8 +8,8 @@ void database_connect(sqlite3** db)
 {
 	int rc = sqlite3_open("database.db", db);
 	if (rc != SQLITE_OK) {
-		printf("Error msg: %s", sqlite3_errmsg(db));
-		sqlite3_close(db);
+		printf("Error msg: %s", sqlite3_errmsg(*db));
+		sqlite3_close(*db);
 		exit(1);
 	}
 

@@ -207,10 +207,10 @@ void handle_get_request(SOCKET _client, char request[MAX_BUFFER_SIZE]) {
 		login_view(_client);
 	}
 	else if (curr_url(request, "/profile")) {
-		profile_view(_client);
+		profile_view(_client, request);
 	}
 	else if (curr_url(request, "/logout")) {
-		logout_view(_client);
+		logout_view(_client, request);
 	}
 	else {
 		send(_client, NOT_FOUND_RESPONSE, strlen(NOT_FOUND_RESPONSE), 0);
@@ -236,9 +236,3 @@ void process_form_data(SOCKET _client, char request[MAX_BUFFER_SIZE], Post_Handl
 	}
 }
 
-void redirect(SOCKET _client, const char* location)
-{
-	char response[MAX_BUFFER_SIZE];
-	sprintf(response, TEMPORARY_REDIRECT, location);
-	send(_client, response, MAX_BUFFER_SIZE, 0);
-}

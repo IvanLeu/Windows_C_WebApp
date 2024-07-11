@@ -30,7 +30,7 @@ void create_sessions_table(sqlite3* db) {
 
 void session_insert(sqlite3* db, const char* session_id, size_t user_id) {
 	char sql[256];
-	sprintf(sql, "INSERT INTO sessions(session_id, user_id, creation_time) VALUES ('%s', %zu, %d);", session_id, user_id, time(NULL));
+	sprintf(sql, "INSERT INTO sessions(session_id, user_id, creation_time) VALUES ('%s', %zu, %lld);", session_id, user_id, time(NULL));
 	char* err_msg = 0;
 	int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
 	if (rc != SQLITE_OK) {
@@ -54,7 +54,7 @@ Session* session_query(sqlite3* db, const char* session_id) {
 	session->session_id = malloc(64);
 
 	char sql[256];
-	sprintf(sql, "SELECT * FROM sessions WHERE session_id = '%s'", session_id);
+	sprintf(sql, "SELECT * FROM sessions WHERE session_id = '%s';", session_id);
 
 	sqlite3_stmt* stmt;
 	int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, 0);
@@ -78,9 +78,49 @@ Session* session_query(sqlite3* db, const char* session_id) {
 	return NULL;
 }
 
+Session* get_session_from_cookies(sqlite3* db, char* request) {
+	char* cookie_header = strstr(request, "Cookie: ");
+	if (!cookie_header) {
+		printf("Failed to fetch cookie data");
+		return NULL;
+	}
+
+	char* session_id = strstr(cookie_header, "session_id=");
+	if (!session_id) {
+		printf("Failed to fetch cookie data");
+		return NULL;
+	}
+
+	session_id += strlen("session_id=");
+	char* end = strchr(session_id, '\r');
+	if (!end) {
+		printf("Failed to fetch cookie data");
+		return NULL;
+	}
+
+	*end = '\0';
+
+	Session* cur_session = session_query(db, session_id);
+	if (!cur_session) {
+		printf("Session does not exist: %s", session_id);
+		return NULL;
+	}
+
+	time_t now = time(NULL);
+
+	if (difftime(now, cur_session->creation_time) > SESSION_EXPIRE_TIME) {
+		session_erase(db, cur_session->session_id);
+		printf("Session life time expired");
+		session_free_struct(cur_session);
+		return NULL;
+	}
+
+	return cur_session;
+}
+
 void session_erase(sqlite3* db, const char* session_id) {
 	char sql[256];
-	sprintf(sql, "DELETE FROM sessions WHERE session_if = '%s';", session_id);
+	sprintf(sql, "DELETE FROM sessions WHERE session_id = '%s';", session_id);
 	char* err_msg = 0;
 	int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
 	if (rc != SQLITE_OK) {
