@@ -59,20 +59,20 @@ static char* include_html(File* file) {
 	char* file_data = malloc(strlen(file->data) + 1);
 
 	if (!file_data) {
-		return;
+		return NULL;
 	}
 
 	strcpy(file_data, file->data);
 
 	char* begin = strstr(file_data, "{%");
 	if (!begin) {
-		return;
+		return NULL;
 	}
 	begin += strlen("{%");
 
 	char* end = strstr(begin, "%}");
 	if (!end) {
-		return;
+		return NULL;
 	}
 
 	*end = '\0';
@@ -80,7 +80,7 @@ static char* include_html(File* file) {
 	char* keyword = strstr(begin, "include");
 
 	if (!keyword) {
-		return;
+		return NULL;
 	}
 
 	keyword += strlen("include");
@@ -94,7 +94,7 @@ static char* include_html(File* file) {
 
 	char* path = malloc(256);
 	if (!path) {
-		return;
+		return NULL;
 	}
 
 	sprintf(path, "./src/templates/%s", include_file_name);
@@ -105,31 +105,31 @@ static char* include_html(File* file) {
 
 	char* file_prefix_end = strstr(include_file.data, "{% block %}");
 	if (!file_prefix_end)
-		return;
+		return NULL;
 
 	char* file_suffix_begin = strstr(file_prefix_end, "{% endblock %}");
 	if (!file_suffix_begin)
-		return;
+		return NULL;
 	file_suffix_begin += strlen("{% endblock %}");
 
 	char* file_suffix_end = strstr(file_suffix_begin, "</html>");
 	if (!file_suffix_end)
-		return;
+		return NULL;
 	file_suffix_end += strlen("</html>\r\n\r\n");
 
 	char* block_begin = strstr(file->data, "{% block %}");
 	if (!block_begin)
-		return;
+		return NULL;
 	block_begin += strlen("{% block %}");
 
 	char* block_end = strstr(block_begin, "{% endblock %}");
 	if (!block_end)
-		return;
+		return NULL;
 
 	int out_file_size = (file_prefix_end - include_file.data) + (block_end - block_begin) + (file_suffix_end - file_suffix_begin);
 	char* send_data = malloc(out_file_size);
 	if (!send_data)
-		return;
+		return NULL;
 
 	memcpy(send_data, include_file.data, file_prefix_end - include_file.data);
 	memcpy(send_data + (file_prefix_end - include_file.data), block_begin, block_end - block_begin);
