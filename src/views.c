@@ -1,6 +1,6 @@
 #include "views.h"
 #include "responses.h"
-#include "io.h"
+#include "../include/io.h"
 #include "session.h"
 #include "global.h"
 #include <stdio.h>
@@ -37,7 +37,7 @@ void profile_view(SOCKET client_socket, char* request) {
 
 	printf("Welcome, Sir#%zu", session->user_id);
 
-	render_template(client_socket, "index.html");
+	render_template(client_socket, "profile.html");
 	session_free_struct(session);
 	return;
 }
@@ -54,6 +54,99 @@ void logout_view(SOCKET client_socket, char* request) {
 	return;
 }
 
+// Easier way to work with html
+static char* include_html(File* file) {
+	char* file_data = malloc(strlen(file->data) + 1);
+
+	if (!file_data) {
+		return;
+	}
+
+	strcpy(file_data, file->data);
+
+	char* begin = strstr(file_data, "{%");
+	if (!begin) {
+		return;
+	}
+	begin += strlen("{%");
+
+	char* end = strstr(begin, "%}");
+	if (!end) {
+		return;
+	}
+
+	*end = '\0';
+
+	char* keyword = strstr(begin, "include");
+
+	if (!keyword) {
+		return;
+	}
+
+	keyword += strlen("include");
+
+	char include_file_name[128] = { 0 };
+	for (int i = 0; keyword != end; keyword++) {
+		if (keyword[0] != ' ') {
+			include_file_name[i++] = keyword[0];
+		}
+	}
+
+	char* path = malloc(256);
+	if (!path) {
+		return;
+	}
+
+	sprintf(path, "./src/templates/%s", include_file_name);
+
+	File include_file;
+	include_file = io_read_file(path);
+	free(path);
+
+	char* file_prefix_end = strstr(include_file.data, "{% block %}");
+	if (!file_prefix_end)
+		return;
+
+	char* file_suffix_begin = strstr(file_prefix_end, "{% endblock %}");
+	if (!file_suffix_begin)
+		return;
+	file_suffix_begin += strlen("{% endblock %}");
+
+	char* file_suffix_end = strstr(file_suffix_begin, "</html>");
+	if (!file_suffix_end)
+		return;
+	file_suffix_end += strlen("</html>\r\n\r\n");
+
+	char* block_begin = strstr(file->data, "{% block %}");
+	if (!block_begin)
+		return;
+	block_begin += strlen("{% block %}");
+
+	char* block_end = strstr(block_begin, "{% endblock %}");
+	if (!block_end)
+		return;
+
+	int out_file_size = (file_prefix_end - include_file.data) + (block_end - block_begin) + (file_suffix_end - file_suffix_begin);
+	char* send_data = malloc(out_file_size);
+	if (!send_data)
+		return;
+
+	memcpy(send_data, include_file.data, file_prefix_end - include_file.data);
+	memcpy(send_data + (file_prefix_end - include_file.data), block_begin, block_end - block_begin);
+	memcpy(send_data + (file_prefix_end - include_file.data) + (block_end - block_begin),
+		file_suffix_begin, file_suffix_end - file_suffix_begin);
+
+	*(send_data + out_file_size) = '\0';
+
+	return send_data;
+}
+
+static void process_template(File* file) {
+	
+}
+
+// end
+
 void render_template(SOCKET _client, const char* filename) {
 	char folder_path[] = "./src/templates/";
 
@@ -66,8 +159,10 @@ void render_template(SOCKET _client, const char* filename) {
 		return;
 	}
 
+	char* senddata = include_html(&file);
+
 	send(_client, OK_RESPONSE_HTML, strlen(OK_RESPONSE_HTML), 0);
-	send(_client, file.data, file.len, 0);
+	send(_client, senddata, strlen(senddata) + 1, 0);
 }
 
 void redirect(SOCKET _client, const char* location, int flag, char* session_id) {
