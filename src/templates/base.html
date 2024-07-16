@@ -1,7 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
+    {% IF title %}
+    <title>Yes</title>
+    {% ELSE %}
     <title>No</title>
+    {% ENDIF %}
 </head>
 <body>
     <nav>

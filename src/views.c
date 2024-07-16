@@ -201,10 +201,11 @@ static void process_template_data(char* data, HashTable* ht) {
 			char* else_begin = strstr(end, "{% ELSE %}");
 			if (else_begin) {
 				else_begin += strlen("{% ELSE %}");
+				char* else_end = end_statement - strlen("{% ENDIF %}");
 				memcpy(new_data, data, begin_statement - data);
-				memcpy(new_data + (begin_statement - data), else_begin, end_statement - else_begin);
-				memcpy(new_data + (begin_statement - data) + (end_statement - else_begin), end_statement, end_file - end_statement);
-				int file_size = (begin_statement - data) + (end_statement - else_begin) + (end_file - end_statement);
+				memcpy(new_data + (begin_statement - data), else_begin, else_end - else_begin);
+				memcpy(new_data + (begin_statement - data) + (else_end - else_begin), end_statement, end_file - end_statement);
+				int file_size = (begin_statement - data) + (else_end - else_begin) + (end_file - end_statement);
 				new_data[file_size] = '\0';
 			}
 			else {
@@ -217,6 +218,8 @@ static void process_template_data(char* data, HashTable* ht) {
 		}
 
 		memcpy(data, new_data, strlen(new_data) + 1);
+
+		free(keyword);
 	}
 	
 
