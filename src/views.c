@@ -8,22 +8,27 @@
 
 
 void home_view(SOCKET client_socket) {
-	render_template(client_socket, "index.html");
+	HashTable* ht = hash_table_create();
+	hash_table_insert(ht, "title", "Title");
+
+	render_template(client_socket, "index.html", ht);
+
+	hash_table_delete(&ht);
 	return;
 }
 
 void about_view(SOCKET client_socket) {
-	render_template(client_socket, "about.html");
+	render_template(client_socket, "about.html", NULL);
 	return;
 }
 
 void register_view(SOCKET client_socket) {
-	render_template(client_socket, "register.html");
+	render_template(client_socket, "register.html", NULL);
 	return;
 }
 
 void login_view(SOCKET client_socket) {
-	render_template(client_socket, "login.html");
+	render_template(client_socket, "login.html", NULL);
 	return;
 }
 
@@ -37,7 +42,7 @@ void profile_view(SOCKET client_socket, char* request) {
 
 	printf("Welcome, Sir#%zu", session->user_id);
 
-	render_template(client_socket, "profile.html");
+	render_template(client_socket, "profile.html", NULL);
 	session_free_struct(session);
 	return;
 }
@@ -141,13 +146,85 @@ static char* include_html(File* file) {
 	return send_data;
 }
 
-static void process_template(File* file) {
+static void process_template_data(char* data, HashTable* ht) {
+
+	// process if statements
+	// conditions will be formed as a single variable and will be
+	// true if variable is not NULL to keep things simple
+	while (strstr(data, "{% IF") != NULL) {
+		char* begin_statement = strstr(data, "{% IF");
+
+		char* begin = strstr(data, "{% IF");
+		begin += strlen("{% IF");
+		char* end = strstr(begin, "%}");
+		if (!end) {
+			return;
+		}
+
+		char* end_statement = strstr(end, "{% ENDIF %}");
+		if (!end_statement) {
+			return;
+		}
+		end_statement += strlen("{% ENDIF %}");
+
+		char* end_file = strstr(end_statement, "</html>");
+		if (!end_file) {
+			return;
+		}
+		end_file += strlen("</html>\r\n\r\n");
+
+		char* keyword = malloc(end - begin);
+		int i = 0;
+		for (; begin != end; begin++) {
+			if (begin[0] != ' ') {
+				keyword[i++] = begin[0];
+			}
+		}
+		keyword[i] = '\0';
+
+		end += strlen("%}");
+
+		char* new_data = malloc(strlen(data) + 1);
+		if (hash_table_at(ht, keyword) != NULL) {
+			char* end_if = strstr(end, "{% ELSE %}");
+			if (!end_if) {
+				end_if = end_statement;
+			}
+
+			memcpy(new_data, data, begin_statement - data);
+			memcpy(new_data + (begin_statement - data), end, end_if - end);
+			memcpy(new_data + (begin_statement - data) + (end_if - end), end_statement, end_file - end_statement);
+			int file_size = (begin_statement - data) + (end_if - end) + (end_file - end_statement);
+			new_data[file_size] = '\0';
+		}
+		else {
+			char* else_begin = strstr(end, "{% ELSE %}");
+			if (else_begin) {
+				else_begin += strlen("{% ELSE %}");
+				memcpy(new_data, data, begin_statement - data);
+				memcpy(new_data + (begin_statement - data), else_begin, end_statement - else_begin);
+				memcpy(new_data + (begin_statement - data) + (end_statement - else_begin), end_statement, end_file - end_statement);
+				int file_size = (begin_statement - data) + (end_statement - else_begin) + (end_file - end_statement);
+				new_data[file_size] = '\0';
+			}
+			else {
+
+				memcpy(new_data, data, begin_statement - data);
+				memcpy(new_data + (begin_statement - data), end_statement, end_file - end_statement);
+				int file_size = (begin_statement - data) + (end_file - end_statement);
+				new_data[file_size] = '\0';
+			}
+		}
+
+		memcpy(data, new_data, strlen(new_data) + 1);
+	}
 	
+
 }
 
 // end
 
-void render_template(SOCKET _client, const char* filename) {
+void render_template(SOCKET _client, const char* filename, HashTable* ht) {
 	char folder_path[] = "./src/templates/";
 
 	char path[1024];
@@ -161,8 +238,14 @@ void render_template(SOCKET _client, const char* filename) {
 
 	char* senddata = include_html(&file);
 
+	if (ht != NULL) {
+		process_template_data(senddata, ht);
+	}
+
 	send(_client, OK_RESPONSE_HTML, strlen(OK_RESPONSE_HTML), 0);
-	send(_client, senddata, strlen(senddata) + 1, 0);
+	send(_client, senddata, strlen(senddata), 0);
+	
+	//free(senddata);
 }
 
 void redirect(SOCKET _client, const char* location, int flag, char* session_id) {
