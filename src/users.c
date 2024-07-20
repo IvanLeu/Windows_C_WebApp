@@ -108,7 +108,6 @@ Vector* query_user(sqlite3* db, Query_Type type, const char* key, const char* ke
 		strcpy(user->password, sqlite3_column_text(stmt, 3));
 
 		vector_push_back(v, user);
-		delete_user(user);
 	}
 
 	sqlite3_finalize(stmt);

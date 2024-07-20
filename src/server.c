@@ -72,7 +72,7 @@ static void login_handler(SOCKET client, const char* data) {
 	char* session_id = malloc(64);
 	generate_session_id(session_id);
 
-	User* user = (User*)vector_at(queried, 0);
+	User* user = vector_at(queried, 0);
 	session_insert(global.db, session_id, user->id);
 
 	vector_destroy(&queried);

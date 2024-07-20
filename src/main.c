@@ -2,7 +2,6 @@
 #include "global.h"
 #include "database.h"
 
-
 int main() {
 
 	sqlite3* db;
