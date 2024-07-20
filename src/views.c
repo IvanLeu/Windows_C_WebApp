@@ -222,7 +222,59 @@ static void process_template_data(char* data, HashTable* ht) {
 		free(keyword);
 	}
 	
+	// proccessing for loops
+	while (strstr(data, "{% FOR")) {
+		char* begin_condition = strstr(data, "{% FOR");
+		char* end_condition = strstr(begin_condition, "%}");
+		if (!begin_condition || !end_condition)
+			break;
 
+		char* condition_body = malloc(end_condition - begin_condition + 1);
+		memcpy(condition_body, begin_condition, end_condition - begin_condition);
+		condition_body[end_condition - begin_condition] = 0;
+
+		char* item = strtok_s(condition_body, ":", &condition_body);
+		char* array = strtok_s(condition_body, ":", &condition_body);
+
+		for (char* s = item; s != 0; s++) {
+			if (*s == ' ') {
+				*s = 0;
+			}
+		}
+
+		for (char* s = array; s != 0; s++) {
+			if (*s == ' ') {
+				*s = 0;
+			}
+		}
+
+		char* val = hash_table_at(ht, array);
+		if (!val)
+			break;
+
+		char* body_begin = end_condition + strlen("%}");
+		char* body_end = strstr(body_begin, "{% ENDFOR %}");
+		if (!body_end)
+			break;
+
+		char* body = malloc(body_end - body_begin + 1);
+		memcpy(body, body_begin, body_end - body_begin);
+		// TODO: decide how to evaluate arrays from hashmaps for this
+		// for now just a dumb loop
+		char* temp;
+		for (int i = 0; i < strtol(val, (char**)NULL, 10); i++) {
+			temp = begin_condition + strlen(body) * i;
+			memcpy(temp, body, strlen(body);
+		}
+		temp += strlen(body);
+
+		char* begin_file_suffix = body_end + strlen("{% ENDFOR %}");
+		char* end_file_suffix = strstr(begin_file_suffix, "</html>\r\n\r\n");
+		if (!end_file_suffix)
+			break;
+
+		memcpy(temp, begin_file_suffix, end_file_suffix - begin_file_suffix);
+	}
 
 }
 
