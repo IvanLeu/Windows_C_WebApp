@@ -6,10 +6,16 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "users.h"
 
 void home_view(SOCKET client_socket) {
 	HashTable* ht = hash_table_create();
+
 	hash_table_insert(ht, "title", "Title", strlen("Title") + 1);
+
+	Vector* users = query_user(global.db, Query_All, NULL, NULL);
+
+	hash_table_insert(ht, "users", users, sizeof(*users));
 
 	render_template(client_socket, "index.html", ht);
 
@@ -229,6 +235,7 @@ static void process_template_data(char* data, HashTable* ht) {
 		if (!begin_condition || !end_condition)
 			break;
 
+		begin_condition += strlen("{% FOR");
 		char* condition_body = malloc(end_condition - begin_condition + 1);
 		memcpy(condition_body, begin_condition, end_condition - begin_condition);
 		condition_body[end_condition - begin_condition] = 0;
@@ -236,21 +243,27 @@ static void process_template_data(char* data, HashTable* ht) {
 		char* item = strtok_s(condition_body, ":", &condition_body);
 		char* array = strtok_s(condition_body, ":", &condition_body);
 
+		while (*item == ' ') {
+			item++;
+		}
+
+		while (*array == ' ') {
+			array++;
+		}
+
 		for (char* s = item; s != 0; s++) {
 			if (*s == ' ') {
 				*s = 0;
+				break;
 			}
 		}
 
 		for (char* s = array; s != 0; s++) {
 			if (*s == ' ') {
 				*s = 0;
+				break;
 			}
 		}
-
-		char* val = hash_table_at(ht, array);
-		if (!val)
-			break;
 
 		char* body_begin = end_condition + strlen("%}");
 		char* body_end = strstr(body_begin, "{% ENDFOR %}");
@@ -259,10 +272,16 @@ static void process_template_data(char* data, HashTable* ht) {
 
 		char* body = malloc(body_end - body_begin + 1);
 		memcpy(body, body_begin, body_end - body_begin);
-		// TODO: decide how to evaluate arrays from hashmaps for this
-		// for now just a dumb loop
+		
 		char* temp;
-		for (int i = 0; i < strtol(val, (char**)NULL, 10); i++) {
+		Vector* v = hash_table_at(ht, array);
+
+		if (!v) {
+			// replace like its looping 0 times
+			break;
+		}
+
+		for (int i = 0; i < vector_size(v); i++) {
 			temp = begin_condition + strlen(body) * i;
 			memcpy(temp, body, strlen(body));
 		}
