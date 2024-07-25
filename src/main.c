@@ -22,15 +22,13 @@ int main() {
 
 		int arr_size = users->capacity * users->item_size;
 
-		void* data = malloc(arr_size);
-		memcpy(data, &users, arr_size);
-		hash_table_insert(ht, "users", data, arr_size);
+		hash_table_insert(ht, "users", users, arr_size);
 
 		Vector* v = malloc(arr_size);
 		memcpy(v, hash_table_at(ht, "users"), arr_size);
 		User* u = vector_at(v, 0);
 
-		//while (true);
+		while (true);
 	}
 
 	sqlite3* db;
