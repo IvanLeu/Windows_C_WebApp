@@ -4,7 +4,7 @@
 
 typedef struct Item {
 	char* key;
-	char* value;
+	void* value;
 	struct Item* next;
 } Item;
 
@@ -13,8 +13,8 @@ typedef struct hash_table {
 } HashTable;
 
 HashTable* hash_table_create();
-void hash_table_insert(HashTable* ht, const char* key, const char* value);
-const char* hash_table_at(HashTable* ht, const char* key);
+void hash_table_insert(HashTable* ht, const char* key, void* value, size_t val_size);
+void* hash_table_at(HashTable* ht, const char* key);
 void hash_table_delete(HashTable** ht);
 void hash_table_print(HashTable* ht);
 int hash(const char* key);

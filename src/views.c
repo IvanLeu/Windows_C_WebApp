@@ -9,7 +9,7 @@
 
 void home_view(SOCKET client_socket) {
 	HashTable* ht = hash_table_create();
-	hash_table_insert(ht, "title", "Title");
+	hash_table_insert(ht, "title", "Title", strlen("Title") + 1);
 
 	render_template(client_socket, "index.html", ht);
 
@@ -264,7 +264,7 @@ static void process_template_data(char* data, HashTable* ht) {
 		char* temp;
 		for (int i = 0; i < strtol(val, (char**)NULL, 10); i++) {
 			temp = begin_condition + strlen(body) * i;
-			memcpy(temp, body, strlen(body);
+			memcpy(temp, body, strlen(body));
 		}
 		temp += strlen(body);
 

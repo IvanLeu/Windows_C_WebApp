@@ -3,13 +3,13 @@
 #include <string.h>
 #include <stdlib.h>
 
-static Item* item_create(const char* key, const char* val) {
+static Item* item_create(const char* key, void* val, size_t val_size) {
 	Item* item = malloc(sizeof(Item));
 	item->key = malloc(strlen(key) + 1);
-	item->value = malloc(strlen(val) + 1);
+	item->value = malloc(val_size);
 
 	strcpy(item->key, key);
-	strcpy(item->value, val);
+	memcpy(item->value, val, val_size);
 	item->next = NULL;
 
 	return item;
@@ -43,7 +43,7 @@ int hash(const char* key) {
 	return hash_value % MAX_TABLE_SIZE;
 }
 
-void hash_table_insert(HashTable* ht, const char* key, const char* value) {
+void hash_table_insert(HashTable* ht, const char* key, void* value, size_t val_size) {
 	if (ht == NULL)
 		return;
 
@@ -52,7 +52,7 @@ void hash_table_insert(HashTable* ht, const char* key, const char* value) {
 	Item* item = ht->items[index];
 
 	if (item == NULL) {
-		ht->items[index] = item_create(key, value);
+		ht->items[index] = item_create(key, value, val_size);
 		return;
 	}
 
@@ -61,18 +61,18 @@ void hash_table_insert(HashTable* ht, const char* key, const char* value) {
 	while (item != NULL) {
 		if (strcmp(item->key, key) == 0) {
 			free(item->value);
-			item->value = malloc(strlen(value) + 1);
-			strcpy(item->value, value);
+			item->value = malloc(val_size);
+			memcpy(item->value, value, val_size);
 			return;
 		}
 		prev = item;
 		item = prev->next;
 	}
 
-	prev->next = item_create(key, value);
+	prev->next = item_create(key, value, val_size);
 }
 
-const char* hash_table_at(HashTable* ht, const char* key) {
+void* hash_table_at(HashTable* ht, const char* key) {
 	if (ht == NULL)
 		return NULL;
 	
@@ -125,7 +125,7 @@ void hash_table_print(HashTable* ht)
 	for (int i = 0; i < MAX_TABLE_SIZE; i++) {
 		if (ht->items[i] == NULL)
 			continue;
-		printf("%s : %s\n", ht->items[i]->key, ht->items[i]->value);
+		printf("%s : %p\n", ht->items[i]->key, ht->items[i]->value);
 	}
 
 	printf("\n");

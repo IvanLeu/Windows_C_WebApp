@@ -36,7 +36,7 @@ HashTable* parse_data(const char* data) {
 
 		char* key = strtok_s(token_cpy, "=", &token_cpy);
 		char* val = strtok_s(token_cpy, "=", &token_cpy);
-		hash_table_insert(ht, key, val);
+		hash_table_insert(ht, key, val, strlen(val) + 1);
 
 		free(temp);
 	}
