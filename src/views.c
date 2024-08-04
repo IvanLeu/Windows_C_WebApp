@@ -159,81 +159,87 @@ static void process_template_data(char** pp_data, HashTable* ht) {
 	// conditions will be formed as a single variable and will be
 	// true if variable is not NULL to keep things simple
 	while (strstr(data, "{% IF") != NULL) {
-		char* begin_statement = strstr(data, "{% IF");
+		const char* if_start = strstr(data, "{% IF");
+		if (!if_start) break;
+		const char* if_body_start = strstr(if_start, "%}");
+		if (!if_body_start) break;
+		if_body_start += strlen("%}");
+		const char* if_end = strstr(if_start, "{% ENDIF %}");
+		if (!if_end) break;
+		if_end += strlen("{% ENDIF %}");
 
-		char* begin = strstr(data, "{% IF");
-		begin += strlen("{% IF");
-		char* end = strstr(begin, "%}");
-		if (!end) {
-			return;
-		}
+		const char* if_body_end = NULL;
+		const char* else_body_start = NULL;
+		const char* else_body_end = NULL;
 
-		char* end_statement = strstr(end, "{% ENDIF %}");
-		if (!end_statement) {
-			return;
-		}
-		end_statement += strlen("{% ENDIF %}");
+		// get the heyword
+		const int keyword_size = (if_body_start - strlen("%}") - (if_start + strlen("{% IF")));
+		char* const keyword = malloc(keyword_size + 1);
+		memcpy(keyword, (if_start + strlen("{% IF")), keyword_size);
+		keyword[keyword_size] = 0;
 
-		char* end_file = strstr(end_statement, "</html>");
-		if (!end_file) {
-			return;
-		}
-		end_file += strlen("</html>\r\n\r\n");
+		remove_spaces(keyword);
 
-		char* keyword = malloc(end - begin);
-		int i = 0;
-		for (; begin != end; begin++) {
-			if (begin[0] != ' ') {
-				keyword[i++] = begin[0];
-			}
-		}
-		keyword[i] = '\0';
-
-		end += strlen("%}");
-
-		char* new_data = malloc(strlen(data) + 1);
-		if (hash_table_at(ht, keyword) != NULL) {
-			char* end_if = strstr(end, "{% ELSE %}");
-			if (!end_if) {
-				end_if = end_statement;
-			}
-
-			memcpy(new_data, data, begin_statement - data);
-			memcpy(new_data + (begin_statement - data), end, end_if - end);
-			memcpy(new_data + (begin_statement - data) + (end_if - end), end_statement, end_file - end_statement);
-			int file_size = (begin_statement - data) + (end_if - end) + (end_file - end_statement);
-			new_data[file_size] = '\0';
+		// determine the rest of pointers based of existence of else statement
+		if (strstr(if_body_start, "{% ELSE %}") && strstr(if_body_start, "{% ELSE %}") < strstr(if_body_start, "{% ENDIF %}")) {
+			if_body_end = strstr(if_body_start, "{% ELSE %}");
+			else_body_start = if_body_end + strlen("{% ELSE %}");
+			else_body_end = strstr(else_body_start, "{% ENDIF %}");
 		}
 		else {
-			char* else_begin = strstr(end, "{% ELSE %}");
-			if (else_begin) {
-				else_begin += strlen("{% ELSE %}");
-				char* else_end = end_statement - strlen("{% ENDIF %}");
-				memcpy(new_data, data, begin_statement - data);
-				memcpy(new_data + (begin_statement - data), else_begin, else_end - else_begin);
-				memcpy(new_data + (begin_statement - data) + (else_end - else_begin), end_statement, end_file - end_statement);
-				int file_size = (begin_statement - data) + (else_end - else_begin) + (end_file - end_statement);
-				new_data[file_size] = '\0';
+			if_body_end = strstr(if_body_start, "{% ENDIF %}");
+		}
+
+		//whole if statement body
+		const int full_if_size = if_end - if_start;
+		char* full_if = malloc(full_if_size + 1);
+		memcpy(full_if, if_start, full_if_size);
+		full_if[full_if_size] = 0;
+
+		//choose branch based on the keyword
+		if (hash_table_at(ht, keyword)) {
+			const int if_body_size = if_body_end - if_body_start;
+			char* if_body = malloc(if_body_size + 1);
+			memcpy(if_body, if_body_start, if_body_size);
+			if_body[if_body_size] = 0;
+
+			*pp_data = str_replace(data, full_if, if_body);
+			//maybe free data??
+			data = *pp_data;
+			free(if_body);
+		}
+		else {
+			if (else_body_start && else_body_end) {
+				const int else_body_size = else_body_end - else_body_start;
+				char* else_body = malloc(else_body_size + 1);
+				memcpy(else_body, else_body_start, else_body_size);
+				else_body[else_body_size] = 0;
+
+				*pp_data = str_replace(data, full_if, else_body);
+				//maybe free data??
+				data = *pp_data;
+				free(else_body);
 			}
 			else {
-
-				memcpy(new_data, data, begin_statement - data);
-				memcpy(new_data + (begin_statement - data), end_statement, end_file - end_statement);
-				int file_size = (begin_statement - data) + (end_file - end_statement);
-				new_data[file_size] = '\0';
+				*pp_data = str_replace(data, full_if, " ");
+				//maybe free data??
+				data = *pp_data;
 			}
 		}
 
-		memcpy(data, new_data, strlen(new_data) + 1);
-
 		free(keyword);
+		free(full_if);
 	}
 	
 	// proccessing for loops
 	while (strstr(data, "{% FOR")) {
 		const char* loop_start = strstr(data, "{% FOR");
-		const char* body_start = strstr(loop_start, "%}") + strlen("%}");
+		if (!loop_start) break;
+		const char* body_start = strstr(loop_start, "%}");
+		if (!body_start) break;
+		body_start += strlen("%}");
 		const char* body_end = strstr(body_start, "{% ENDFOR %}");
+		if (!body_end) break;
 		const char* loop_end = body_end + strlen("{% ENDFOR %}");
 
 		//extract loop condition data
@@ -248,9 +254,17 @@ static void process_template_data(char** pp_data, HashTable* ht) {
 		remove_spaces(item_name);
 		remove_spaces(array_name);
 
+		//get the full for loop body before proccessing
+		const int before_loop_size = loop_end - loop_start;
+		char* before_loop = malloc(before_loop_size + 1);
+		memcpy(before_loop, loop_start, before_loop_size);
+		before_loop[before_loop_size] = 0;
+
 		Vector* v = hash_table_at(ht, array_name);
 		if (!v) {
-			//replace with nothing
+			*pp_data = str_replace(data, before_loop, " ");
+			//maybe free data??
+			data = *pp_data;
 			continue;
 		}
 
@@ -272,13 +286,8 @@ static void process_template_data(char** pp_data, HashTable* ht) {
 		}
 		new_body[new_body_size] = 0;
 
-		const int before_loop_size = loop_end - loop_start;
-		char* before_loop = malloc(before_loop_size + 1);
-		memcpy(before_loop, loop_start, before_loop_size);
-		before_loop[before_loop_size] = 0;
-
 		*pp_data = str_replace(data, before_loop, new_body);
-
+		//maybe free data??
 		data = *pp_data;
 
 		free(body);
