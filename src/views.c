@@ -5,6 +5,7 @@
 #include "global.h"
 #include <stdio.h>
 #include <string.h>
+#include "../include/utils.h"
 
 #include "users.h"
 
@@ -152,8 +153,8 @@ static char* include_html(File* file) {
 	return send_data;
 }
 
-static void process_template_data(char* data, HashTable* ht) {
-
+static void process_template_data(char** pp_data, HashTable* ht) {
+	char* data = *pp_data;
 	// process if statements
 	// conditions will be formed as a single variable and will be
 	// true if variable is not NULL to keep things simple
@@ -230,69 +231,59 @@ static void process_template_data(char* data, HashTable* ht) {
 	
 	// proccessing for loops
 	while (strstr(data, "{% FOR")) {
-		char* begin_condition = strstr(data, "{% FOR");
-		char* end_condition = strstr(begin_condition, "%}");
-		if (!begin_condition || !end_condition)
-			break;
+		const char* loop_start = strstr(data, "{% FOR");
+		const char* body_start = strstr(loop_start, "%}") + strlen("%}");
+		const char* body_end = strstr(body_start, "{% ENDFOR %}");
+		const char* loop_end = body_end + strlen("{% ENDFOR %}");
 
-		begin_condition += strlen("{% FOR");
-		char* condition_body = malloc(end_condition - begin_condition + 1);
-		memcpy(condition_body, begin_condition, end_condition - begin_condition);
-		condition_body[end_condition - begin_condition] = 0;
+		//extract loop condition data
+		const int temp_size = (body_start - strlen("%}")) - (loop_start + strlen("{% FOR"));
+		char* temp = malloc(temp_size + 1);
+		memcpy(temp, loop_start + strlen("{% FOR"), temp_size);
+		temp[temp_size] = 0;
+		char* temp_cpy = temp;
+		char* const item_name = strtok_s(temp, ":", &temp);
+		char* const array_name = strtok_s(temp, ":", &temp);
 
-		char* item = strtok_s(condition_body, ":", &condition_body);
-		char* array = strtok_s(condition_body, ":", &condition_body);
+		remove_spaces(item_name);
+		remove_spaces(array_name);
 
-		while (*item == ' ') {
-			item++;
-		}
-
-		while (*array == ' ') {
-			array++;
-		}
-
-		for (char* s = item; s != 0; s++) {
-			if (*s == ' ') {
-				*s = 0;
-				break;
-			}
-		}
-
-		for (char* s = array; s != 0; s++) {
-			if (*s == ' ') {
-				*s = 0;
-				break;
-			}
-		}
-
-		char* body_begin = end_condition + strlen("%}");
-		char* body_end = strstr(body_begin, "{% ENDFOR %}");
-		if (!body_end)
-			break;
-
-		char* body = malloc(body_end - body_begin + 1);
-		memcpy(body, body_begin, body_end - body_begin);
-		
-		char* temp;
-		Vector* v = hash_table_at(ht, array);
-
+		Vector* v = hash_table_at(ht, array_name);
 		if (!v) {
-			// replace like its looping 0 times
-			break;
+			//replace with nothing
+			continue;
 		}
 
+		free(temp_cpy);
+
+		const int body_size = body_end - body_start;
+		char* body = malloc(body_size + 1);
+
+		memcpy(body, body_start, body_size);
+		body[body_size] = 0;
+
+		const int new_body_size = body_size * vector_size(v);
+		char* new_body = malloc(new_body_size + 1);
 		for (int i = 0; i < vector_size(v); i++) {
-			temp = begin_condition + strlen(body) * i;
-			memcpy(temp, body, strlen(body));
+			char* temp = new_body + body_size * i;
+			memcpy(temp, body, body_size);
+			//replace vars with values
+			//...
 		}
-		temp += strlen(body);
+		new_body[new_body_size] = 0;
 
-		char* begin_file_suffix = body_end + strlen("{% ENDFOR %}");
-		char* end_file_suffix = strstr(begin_file_suffix, "</html>\r\n\r\n");
-		if (!end_file_suffix)
-			break;
+		const int before_loop_size = loop_end - loop_start;
+		char* before_loop = malloc(before_loop_size + 1);
+		memcpy(before_loop, loop_start, before_loop_size);
+		before_loop[before_loop_size] = 0;
 
-		memcpy(temp, begin_file_suffix, end_file_suffix - begin_file_suffix);
+		*pp_data = str_replace(data, before_loop, new_body);
+
+		data = *pp_data;
+
+		free(body);
+		free(new_body);
+		free(before_loop);
 	}
 
 }
@@ -314,7 +305,7 @@ void render_template(SOCKET _client, const char* filename, HashTable* ht) {
 	char* senddata = include_html(&file);
 
 	if (ht != NULL) {
-		process_template_data(senddata, ht);
+		process_template_data(&senddata, ht);
 	}
 
 	send(_client, OK_RESPONSE_HTML, strlen(OK_RESPONSE_HTML), 0);

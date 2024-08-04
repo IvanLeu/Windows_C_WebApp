@@ -43,3 +43,12 @@ char* str_replace(char* orig, char* rep, char* with) {
 	strcpy(tmp, orig);
 	return result;
 }
+
+void remove_spaces(char* s) {
+	char* d = s;
+	do {
+		while (*d == ' ') {
+			++d;
+		}
+	} while (*s++ = *d++);
+}
