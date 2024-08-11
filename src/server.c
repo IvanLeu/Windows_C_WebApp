@@ -36,7 +36,7 @@ HashTable* parse_data(const char* data) {
 
 		char* key = strtok_s(token_cpy, "=", &token_cpy);
 		char* val = strtok_s(token_cpy, "=", &token_cpy);
-		hash_table_insert(ht, key, val, strlen(val) + 1);
+		hash_table_insert(ht, key, VAL_STRING, val, strlen(val) + 1);
 
 		free(temp);
 	}
@@ -49,12 +49,12 @@ HashTable* parse_data(const char* data) {
 static void register_handler(SOCKET sock, const char* data) {
 	HashTable* user_table = parse_data(data);
 
-	char* email = str_replace(hash_table_at(user_table, "email"), "%40", "@");
+	char* email = str_replace(hash_table_at(user_table, "email")->data, "%40", "@");
 	if (!email) {
-		email = hash_table_at(user_table, "email");
+		email = hash_table_at(user_table, "email")->data;
 	}
 
-	insert_user(global.db, hash_table_at(user_table, "name"), email, hash_table_at(user_table, "password"));
+	insert_user(global.db, hash_table_at(user_table, "name")->data, email, hash_table_at(user_table, "password")->data);
 	
 	hash_table_delete(&user_table);
 }
@@ -62,7 +62,7 @@ static void register_handler(SOCKET sock, const char* data) {
 static void login_handler(SOCKET client, const char* data) {
 	HashTable* user_table = parse_data(data);
 
-	Vector* queried = query_user(global.db, Query_By_Name_Password, hash_table_at(user_table, "name"), hash_table_at(user_table, "password"));
+	Vector* queried = query_user(global.db, Query_By_Name_Password, hash_table_at(user_table, "name")->data, hash_table_at(user_table, "password")->data);
 
 	if (vector_empty(queried)) {
 		// TODO: redirect to login and push messages that name or password is incorrect

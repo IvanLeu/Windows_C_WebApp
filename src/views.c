@@ -12,11 +12,11 @@
 void home_view(SOCKET client_socket) {
 	HashTable* ht = hash_table_create();
 
-	hash_table_insert(ht, "title", "Title", strlen("Title") + 1);
+	hash_table_insert(ht, "title", VAL_STRING, "Title", strlen("Title") + 1);
 
 	Vector* users = query_user(global.db, Query_All, NULL, NULL);
 
-	hash_table_insert(ht, "users", users, sizeof(*users));
+	hash_table_insert(ht, "users", VAL_ARRAY, users, sizeof(*users));
 
 	render_template(client_socket, "index.html", ht);
 
@@ -260,7 +260,7 @@ static void process_template_data(char** pp_data, HashTable* ht) {
 		memcpy(before_loop, loop_start, before_loop_size);
 		before_loop[before_loop_size] = 0;
 
-		Vector* v = hash_table_at(ht, array_name);
+		Vector* v = hash_table_at(ht, array_name)->data;
 		if (!v) {
 			*pp_data = str_replace(data, before_loop, " ");
 			//maybe free data??
@@ -295,6 +295,53 @@ static void process_template_data(char** pp_data, HashTable* ht) {
 		free(before_loop);
 	}
 
+	// last step: replace remaining {{ }} variables
+	// ONLY string replacement - other types will be ignored
+	while (strstr(data, "{{")) {
+		const char* const begin = strstr(data, "{{");
+		const char* const end = strstr(begin, "}}") + strlen("}}");
+
+		const int statement_size = end - begin;
+		char* const to_replace = malloc(statement_size + 1);
+		memcpy(to_replace, begin, statement_size);
+		to_replace[statement_size] = 0;
+
+		const char* const body_begin = begin + strlen("{{");
+		const char* const body_end = end - strlen("}}");
+		const int body_size = body_end - body_begin;
+		char* const body = malloc(body_size + 1);
+		memcpy(body, body_begin, body_size);
+		body[body_size] = 0;
+
+		//to deallocate later
+		const char* bodycpy = body;
+
+		remove_spaces(body);
+
+		HT_Value* val = hash_table_at(ht, body);
+		if (val != NULL) {
+			char with[2048]; //probably enough
+			switch (val->type) {
+			case VAL_INT:
+				sprintf(with, "%d", *((int*)val->data));
+				break;
+			case VAL_FLOAT:
+				sprintf(with, "%f", *((float*)val->data));
+				break;
+			case VAL_STRING:
+				sprintf(with, "%s", (char*)val->data);
+				break;
+			}
+
+			*pp_data = str_replace(data, to_replace, with);
+			data = *pp_data;
+			
+		}
+
+		//otherwise just deallocate and move on;
+		free(to_replace);
+		free(bodycpy);
+	}
 }
 
 // end
