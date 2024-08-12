@@ -12,6 +12,7 @@ User* create_user()
 	user->name = malloc(256);
 	user->email = malloc(256);
 	user->password = malloc(256);
+	user->metadata = user_metadata;
 	return user;
 }
 

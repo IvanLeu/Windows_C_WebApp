@@ -1,7 +1,9 @@
 #pragma once
+
 #include <stdbool.h>
 #include "sqlite3\sqlite3.h"
 #include "vector.h"
+#include "field_metadata.h"
 
 typedef enum Query_Type {
 	Query_None = 0,
@@ -17,7 +19,16 @@ typedef struct User {
 	char* name;
 	char* email;
 	char* password;
+	field_metadata* metadata;
 } User;
+
+static field_metadata user_metadata[] = {
+   FIELD_METADATA(User, id, "size_t"),
+   FIELD_METADATA(User, name, "string"),
+   FIELD_METADATA(User, email, "string"),
+   FIELD_METADATA(User, password, "string"),
+   {NULL, 0, NULL} //terminator
+};
 
 User* create_user();
 void delete_user(User* user);
