@@ -13,7 +13,8 @@
 void home_view(SOCKET client_socket) {
 	HashTable* ht = hash_table_create();
 
-	hash_table_insert(ht, "title", VAL_STRING, "Title", strlen("Title") + 1);
+	const char* title = "Home Page";
+	hash_table_insert(ht, "title", VAL_STRING, title, strlen(title) + 1);
 
 	Vector* users = query_user(global.db, Query_All, NULL, NULL);
 

@@ -2,7 +2,11 @@
 
 #include "../include/vector.h"
 #include "../include/utils.h"
+#include "../include/field_metadata.h"
 #include <stdlib.h>
+#include <inttypes.h>
+
+#define MAX_BUFFER_SIZE 2048
 
 char* include_html(File* file) {
 	char* file_data = malloc(strlen(file->data) + 1);
@@ -90,6 +94,39 @@ char* include_html(File* file) {
 	return send_data;
 }
 
+static const char* get_fieldname_from_object(const char* begin_statement, const char* end_statement, const char* object_name) {
+	char* result = NULL;
+	// assume that begin/end of statement is valid
+	begin_statement += strlen("{{");
+	end_statement -= strlen("}}");
+
+	const int body_size = end_statement - begin_statement;
+	char* body = malloc(body_size + 1);
+	memcpy(body, begin_statement, body_size);
+	body[body_size] = 0;
+
+	// to free later
+	char* bodycpy = body;
+
+	remove_spaces(body);
+
+	//no field access or invalid object name
+	if (strlen(object_name) >= strlen(body)) {
+		free(bodycpy);
+		return result;
+	}
+
+	//compare the prefixes
+	if (memcmp(object_name, body, strlen(object_name)) == 0) {
+		const int result_size = body_size - strlen(object_name) - 1;
+		result = malloc(result_size + 1);
+		memcpy(result, body + strlen(object_name) + 1, result_size);
+		result[result_size] = 0;
+	}
+
+	free(bodycpy);
+	return result;
+}
 
 void process_template_data(char** pp_data, HashTable* ht) {
 	char* data = *pp_data;
@@ -206,8 +243,6 @@ void process_template_data(char** pp_data, HashTable* ht) {
 			continue;
 		}
 
-		free(temp_cpy);
-
 		const int body_size = body_end - body_start;
 		char* body = malloc(body_size + 1);
 
@@ -218,9 +253,64 @@ void process_template_data(char** pp_data, HashTable* ht) {
 		char* new_body = malloc(new_body_size + 1);
 		for (int i = 0; i < vector_size(v); i++) {
 			char* temp = new_body + body_size * i;
-			memcpy(temp, body, body_size);
+
 			//replace vars with values
-			//...
+			const char* begin_statement;
+			while ((begin_statement = strstr(body, "{{")) != NULL) {
+				const char* end_statement = strstr(begin_statement, "}}");
+				if (!end_statement) {
+					break;
+				}
+				end_statement += strlen("}}");
+				//whole statement to replace later
+				const int statement_size = end_statement - begin_statement;
+				char* statement = malloc(statement_size + 1);
+				memcpy(statement, begin_statement, statement_size);
+				statement[statement_size] = 0;
+
+				// basically works like this: "{{ item_name.field }}" -> returns "field"
+				const char* field_name = get_fieldname_from_object(begin_statement, end_statement, item_name);
+				if (!field_name) {
+					continue;
+				}
+				//every struct that can be stored in array should have metadata defined as FIRST field
+				void* current_item = vector_at(v, i);
+				//problem here
+				const field_metadata* metadata = (field_metadata*)malloc(sizeof(field_metadata));
+				memcpy(metadata, current_item, sizeof(field_metadata*));
+
+				for (int j = 0; metadata[j].type != NULL; j++) {
+					char* MD_field_name = metadata[j].placeholder;
+					size_t MD_offset = metadata[j].offset;
+					char* MD_type = metadata[j].type;
+
+					char replace_with[MAX_BUFFER_SIZE];
+					if (metadata[j].type == "string") {
+						sprintf(replace_with, "%s", (char*)((char*)current_item + MD_offset));
+					}
+					else if (metadata[j].type == "int") {
+						sprintf(replace_with, "%d", *((int*)((char*)current_item + MD_offset)));
+					}
+					else if (metadata[j].type == "float") {
+						sprintf(replace_with, "%f", *((float*)((char*)current_item + MD_offset)));
+					}
+					else if (metadata[j].type == "size_t") {
+						sprintf(replace_with, "%zu", *((uint64_t*)current_item + MD_offset));
+					}
+					else {
+						free(statement);
+						free(metadata);
+						continue;
+					}
+
+					str_replace(temp, statement, replace_with);
+					free(statement);
+					free(metadata);
+				}
+				
+			}
+
+			memcpy(temp, body, body_size);
 		}
 		new_body[new_body_size] = 0;
 
@@ -231,6 +321,7 @@ void process_template_data(char** pp_data, HashTable* ht) {
 		free(body);
 		free(new_body);
 		free(before_loop);
+		free(temp_cpy);
 	}
 
 	// last step: replace remaining {{ }} variables
@@ -247,7 +338,7 @@ void process_template_data(char** pp_data, HashTable* ht) {
 		const char* const body_begin = begin + strlen("{{");
 		const char* const body_end = end - strlen("}}");
 		const int body_size = body_end - body_begin;
-		char* body = malloc(body_size + 1);
+		char* const body = malloc(body_size + 1);
 		memcpy(body, body_begin, body_size);
 		body[body_size] = 0;
 

@@ -15,20 +15,12 @@ typedef enum Query_Type {
 } Query_Type;
 
 typedef struct User {
+	field_metadata* metadata;
 	size_t id;
 	char* name;
 	char* email;
 	char* password;
-	field_metadata* metadata;
 } User;
-
-static field_metadata user_metadata[] = {
-   FIELD_METADATA(User, id, "size_t"),
-   FIELD_METADATA(User, name, "string"),
-   FIELD_METADATA(User, email, "string"),
-   FIELD_METADATA(User, password, "string"),
-   {NULL, 0, NULL} //terminator
-};
 
 User* create_user();
 void delete_user(User* user);

@@ -6,6 +6,14 @@
 
 #define PASSWORD_BUFF_SIZE 256
 
+field_metadata user_metadata[] = {
+   FIELD_METADATA(User, id, "size_t"),
+   FIELD_METADATA(User, name, "string"),
+   FIELD_METADATA(User, email, "string"),
+   FIELD_METADATA(User, password, "string"),
+   METADATA_TERMINATOR //terminator
+};
+
 User* create_user()
 {
 	User* user = malloc(sizeof(User));

@@ -3,22 +3,8 @@
 {% block %}
 <h1>Index Page</h1>
 
-{% IF title %}
-<h2>We have title</h2>
-{% ENDIF %}
-
-{% IF fun %}
-<h2>We have Fun</h2>
-{% ELSE %}
-<h2>No Fun</h2>
-{% ENDIF %}
-
-{% IF run %}
-<h2>We have run</h2>
-{% ENDIF %}
-
 {% FOR user : users %}
-<p>Loop</p>
+<p>{{ user.name }}</p>
 {% ENDFOR %}
 
 {% endblock %}
