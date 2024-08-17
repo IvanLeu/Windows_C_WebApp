@@ -22,6 +22,8 @@ typedef struct User {
 	char* password;
 } User;
 
+extern field_metadata user_metadata[];
+
 User* create_user();
 void delete_user(User* user);
 

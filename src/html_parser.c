@@ -276,8 +276,7 @@ void process_template_data(char** pp_data, HashTable* ht) {
 				//every struct that can be stored in array should have metadata defined as FIRST field
 				void* current_item = vector_at(v, i);
 				//problem here
-				const field_metadata* metadata = (field_metadata*)malloc(sizeof(field_metadata));
-				memcpy(metadata, current_item, sizeof(field_metadata*));
+				const field_metadata* metadata = *((field_metadata**)current_item);
 
 				for (int j = 0; metadata[j].type != NULL; j++) {
 					char* MD_field_name = metadata[j].placeholder;
@@ -285,27 +284,25 @@ void process_template_data(char** pp_data, HashTable* ht) {
 					char* MD_type = metadata[j].type;
 
 					char replace_with[MAX_BUFFER_SIZE];
-					if (metadata[j].type == "string") {
+					if (strcmp(metadata[j].type,"string") == 0) {
 						sprintf(replace_with, "%s", (char*)((char*)current_item + MD_offset));
 					}
-					else if (metadata[j].type == "int") {
+					else if (strcmp(metadata[j].type, "int") == 0) {
 						sprintf(replace_with, "%d", *((int*)((char*)current_item + MD_offset)));
 					}
-					else if (metadata[j].type == "float") {
+					else if (strcmp(metadata[j].type, "float") == 0) {
 						sprintf(replace_with, "%f", *((float*)((char*)current_item + MD_offset)));
 					}
-					else if (metadata[j].type == "size_t") {
+					else if (strcmp(metadata[j].type, "size_t") == 0) {
 						sprintf(replace_with, "%zu", *((uint64_t*)current_item + MD_offset));
 					}
 					else {
 						free(statement);
-						free(metadata);
 						continue;
 					}
 
 					str_replace(temp, statement, replace_with);
 					free(statement);
-					free(metadata);
 				}
 				
 			}
