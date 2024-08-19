@@ -218,47 +218,54 @@ void process_template_data(char** pp_data, HashTable* ht) {
 		const char* loop_end = body_end + strlen("{% ENDFOR %}");
 
 		//extract loop condition data
-		const int temp_size = (body_start - strlen("%}")) - (loop_start + strlen("{% FOR"));
-		char* temp = malloc(temp_size + 1);
-		memcpy(temp, loop_start + strlen("{% FOR"), temp_size);
-		temp[temp_size] = 0;
-		char* temp_cpy = temp;
-		char* const item_name = strtok_s(temp, ":", &temp);
-		char* const array_name = strtok_s(temp, ":", &temp);
+		const int loop_condition_data_size = (body_start - strlen("%}")) - (loop_start + strlen("{% FOR"));
+		char* loop_condition_data = malloc(loop_condition_data_size + 1);
+		memcpy(loop_condition_data, loop_start + strlen("{% FOR"), loop_condition_data_size);
+		loop_condition_data[loop_condition_data_size] = 0;
+		char* loop_condition_data_cpy = loop_condition_data;
+		char* const item_name = strtok_s(loop_condition_data, ":", &loop_condition_data);
+		char* const array_name = strtok_s(loop_condition_data, ":", &loop_condition_data);
 
 		remove_spaces(item_name);
 		remove_spaces(array_name);
 
-		//get the full for loop body before proccessing
+		//get the full for loop block in html to replace it after
 		const int before_loop_size = loop_end - loop_start;
 		char* before_loop = malloc(before_loop_size + 1);
 		memcpy(before_loop, loop_start, before_loop_size);
 		before_loop[before_loop_size] = 0;
 
+		// extract vector from hashmap
 		Vector* v = hash_table_at(ht, array_name)->data;
-		if (!v) {
+		if (!v) { // replace whole for-loop block with empty space if vector does not exist
 			*pp_data = str_replace(data, before_loop, " ");
 			//maybe free data??
 			data = *pp_data;
 			continue;
 		}
 
+		// body of the for-loop that will be proccessed and copied n times
 		const int body_size = body_end - body_start;
 		char* body = malloc(body_size + 1);
-
 		memcpy(body, body_start, body_size);
 		body[body_size] = 0;
-
+		// new body that will replace whole for-loop block after all processing is done
 		const int new_body_size = body_size * vector_size(v);
 		char* new_body = malloc(new_body_size + 1);
+
+		char* new_body_iterator = new_body; // move the ptr each iteration by the size of the proccessed loop body
 		for (int i = 0; i < vector_size(v); i++) {
-			char* temp = new_body + body_size * i;
+
+			// while loop will parse this copy of body to avoid body modification
+			char* temp_body = strdup(body);
 
 			//replace vars with values
 			const char* begin_statement;
-			while ((begin_statement = strstr(body, "{{")) != NULL) {
+			while ((begin_statement = strstr(temp_body, "{{")) != NULL) {
 				const char* end_statement = strstr(begin_statement, "}}");
 				if (!end_statement) {
+					// move on and ignore it in next iterations 
+					// (can be done by shifting body ptr to position after begin_statement)
 					break;
 				}
 				end_statement += strlen("}}");
@@ -271,43 +278,52 @@ void process_template_data(char** pp_data, HashTable* ht) {
 				// basically works like this: "{{ item_name.field }}" -> returns "field"
 				const char* field_name = get_fieldname_from_object(begin_statement, end_statement, item_name);
 				if (!field_name) {
+					// move on and ignore it in next iterations 
+					// (can be done by shifting body ptr to position after begin_statement)
 					continue;
 				}
 				//every struct that can be stored in array should have metadata defined as FIRST field
 				void* current_item = vector_at(v, i);
-				//problem here
+				//getting metadata information
 				const field_metadata* metadata = *((field_metadata**)current_item);
 
+				// find matching field name in metadata and replace
 				for (int j = 0; metadata[j].type != NULL; j++) {
 					char* MD_field_name = metadata[j].placeholder;
 					size_t MD_offset = metadata[j].offset;
 					char* MD_type = metadata[j].type;
 
-					char replace_with[MAX_BUFFER_SIZE];
-					if (strcmp(metadata[j].type,"string") == 0) {
-						sprintf(replace_with, "%s", (char*)((char*)current_item + MD_offset));
-					}
-					else if (strcmp(metadata[j].type, "int") == 0) {
-						sprintf(replace_with, "%d", *((int*)((char*)current_item + MD_offset)));
-					}
-					else if (strcmp(metadata[j].type, "float") == 0) {
-						sprintf(replace_with, "%f", *((float*)((char*)current_item + MD_offset)));
-					}
-					else if (strcmp(metadata[j].type, "size_t") == 0) {
-						sprintf(replace_with, "%zu", *((uint64_t*)current_item + MD_offset));
-					}
-					else {
-						free(statement);
-						continue;
-					}
+					if (strcmp(field_name, MD_field_name) == 0) {
+						char replace_with[MAX_BUFFER_SIZE];
+						if (strcmp(metadata[j].type, "string") == 0) {
+							sprintf(replace_with, "%s", (char*)((char*)current_item + MD_offset));
+						}
+						else if (strcmp(metadata[j].type, "int") == 0) {
+							sprintf(replace_with, "%d", *((int*)((char*)current_item + MD_offset)));
+						}
+						else if (strcmp(metadata[j].type, "float") == 0) {
+							sprintf(replace_with, "%f", *((float*)((char*)current_item + MD_offset)));
+						}
+						else if (strcmp(metadata[j].type, "size_t") == 0) {
+							sprintf(replace_with, "%zu", *((uint64_t*)current_item + MD_offset));
+						}
+						else {
+							free(statement);
+							continue;
+						}
 
-					str_replace(temp, statement, replace_with);
-					free(statement);
+						temp_body = str_replace(temp_body, statement, replace_with);
+						memcpy(new_body_iterator, temp_body, body_size);
+						new_body_iterator += strlen(temp_body);
+						free(statement);
+						break;
+					}
 				}
 				
 			}
 
-			memcpy(temp, body, body_size);
+			free(temp_body);
+
 		}
 		new_body[new_body_size] = 0;
 
@@ -318,7 +334,7 @@ void process_template_data(char** pp_data, HashTable* ht) {
 		free(body);
 		free(new_body);
 		free(before_loop);
-		free(temp_cpy);
+		free(loop_condition_data_cpy);
 	}
 
 	// last step: replace remaining {{ }} variables
