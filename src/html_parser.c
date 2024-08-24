@@ -299,13 +299,13 @@ void process_template_data(char** pp_data, HashTable* ht) {
 							sprintf(replace_with, "%s", (char*)((char*)current_item + MD_offset));
 						}
 						else if (strcmp(metadata[j].type, "int") == 0) {
-							sprintf(replace_with, "%d", *((int*)((char*)current_item + MD_offset)));
+							sprintf(replace_with, "%d", (int)(*((char*)current_item + MD_offset)));
 						}
 						else if (strcmp(metadata[j].type, "float") == 0) {
-							sprintf(replace_with, "%f", *((float*)((char*)current_item + MD_offset)));
+							sprintf(replace_with, "%f", (float)(*((char*)current_item + MD_offset)));
 						}
 						else if (strcmp(metadata[j].type, "size_t") == 0) {
-							sprintf(replace_with, "%zu", *((uint64_t*)current_item + MD_offset));
+							sprintf(replace_with, "%zu", (size_t)(*((char*)current_item + MD_offset)));
 						}
 						else {
 							free(statement);
