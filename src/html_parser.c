@@ -296,7 +296,7 @@ void process_template_data(char** pp_data, HashTable* ht) {
 					if (strcmp(field_name, MD_field_name) == 0) {
 						char replace_with[MAX_BUFFER_SIZE];
 						if (strcmp(metadata[j].type, "string") == 0) {
-							sprintf(replace_with, "%s", (char*)((char*)current_item + MD_offset));
+							sprintf(replace_with, "%s", *((char**)((char*)current_item + MD_offset))); // this expression drives me crazy bruv
 						}
 						else if (strcmp(metadata[j].type, "int") == 0) {
 							sprintf(replace_with, "%d", (int)(*((char*)current_item + MD_offset)));
