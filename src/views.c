@@ -18,9 +18,6 @@ void home_view(SOCKET client_socket) {
 
 	Vector* users = query_user(global.db, Query_All, NULL, NULL);
 
-	User* u = vector_at(users, 0);
-	char* name = u->name;
-
 	hash_table_insert(ht, "users", VAL_ARRAY, users, sizeof(*users));
 
 	render_template(client_socket, "index.html", ht);
