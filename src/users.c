@@ -74,7 +74,7 @@ void insert_user(sqlite3* db, const char* name, const char* email, const char* p
 	return;
 }
 
-Vector* query_user(sqlite3* db, Query_Type type, const char* key, const char* key1) {
+Vector* query_user(sqlite3* db, User_Query_Type type, const char* key, const char* key1) {
 	char sql[256];
 
 	char hashed_password[256];
