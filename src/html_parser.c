@@ -236,7 +236,8 @@ void process_template_data(char** pp_data, HashTable* ht) {
 		before_loop[before_loop_size] = 0;
 
 		// extract vector from hashmap
-		Vector* v = hash_table_at(ht, array_name)->data;
+		HT_Value* ht_val = hash_table_at(ht, array_name);
+		Vector* v = ht_val != NULL ? hash_table_at(ht, array_name)->data : NULL;
 		if (!v) { // replace whole for-loop block with empty space if vector does not exist
 			*pp_data = str_replace(data, before_loop, " ");
 			//maybe free data??
@@ -339,8 +340,9 @@ void process_template_data(char** pp_data, HashTable* ht) {
 
 	// last step: replace remaining {{ }} variables
 	// ONLY string replacement - other types will be ignored
-	while (strstr(data, "{{")) {
-		const char* const begin = strstr(data, "{{");
+	char* data_iterator = data;
+	while (strstr(data_iterator, "{{")) {
+		const char* const begin = strstr(data_iterator, "{{");
 		const char* const end = strstr(begin, "}}") + strlen("}}");
 
 		const int statement_size = end - begin;
@@ -377,7 +379,11 @@ void process_template_data(char** pp_data, HashTable* ht) {
 
 			*pp_data = str_replace(data, to_replace, with);
 			data = *pp_data;
+			data_iterator = data;
 
+		}
+		else {
+			data_iterator = end;
 		}
 
 		//otherwise just deallocate and move on;
