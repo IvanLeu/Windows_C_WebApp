@@ -62,7 +62,7 @@ static void register_handler(SOCKET sock, const char* data) {
 static void login_handler(SOCKET client, const char* data) {
 	HashTable* user_table = parse_data(data);
 
-	Vector* queried = query_user(global.db, Query_By_Name_Password, hash_table_at(user_table, "name")->data, hash_table_at(user_table, "password")->data);
+	Vector* queried = query_user(global.db, Users_Query_By_Name_Password, hash_table_at(user_table, "name")->data, hash_table_at(user_table, "password")->data);
 
 	if (vector_empty(queried)) {
 		// TODO: redirect to login and push messages that name or password is incorrect

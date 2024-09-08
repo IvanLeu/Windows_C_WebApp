@@ -6,12 +6,12 @@
 #include "field_metadata.h"
 
 typedef enum User_Query_Type {
-	Query_None = 0,
-	Query_By_ID = 1,
-	Query_By_Name = 2,
-	Query_By_Email = 3,
-	Query_By_Name_Password = 4,
-	Query_All = 5,
+	Users_Query_None = 0,
+	Users_Query_By_ID = 1,
+	Users_Query_By_Name = 2,
+	Users_Query_By_Email = 3,
+	Users_Query_By_Name_Password = 4,
+	Users_Query_All = 5,
 } User_Query_Type;
 
 typedef struct User {

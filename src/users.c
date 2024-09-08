@@ -83,19 +83,19 @@ Vector* query_user(sqlite3* db, User_Query_Type type, const char* key, const cha
 	}
 
 	switch (type) {
-	case Query_By_ID:
+	case Users_Query_By_ID:
 		sprintf(sql, "SELECT * FROM users WHERE ID = %s;", key);
 		break;
-	case Query_By_Name:
+	case Users_Query_By_Name:
 		sprintf(sql, "SELECT * FROM users WHERE name = '%s';", key);
 		break;
-	case Query_By_Name_Password:
+	case Users_Query_By_Name_Password:
 		sprintf(sql, "SELECT * FROM users WHERE name = '%s' AND password = '%s';", key, hashed_password);
 		break;
-	case Query_By_Email:
+	case Users_Query_By_Email:
 		sprintf(sql, "SELECT * FROM users WHERE email = '%s';", key);
 		break;
-	case Query_All:
+	case Users_Query_All:
 		sprintf(sql, "SELECT * FROM users;");
 		break;
 	}
