@@ -9,6 +9,7 @@
 #include "../include/html_parser.h"
 
 #include "users.h"
+#include "posts.h"
 
 void home_view(SOCKET client_socket) {
 	HashTable* ht = hash_table_create();
@@ -16,8 +17,8 @@ void home_view(SOCKET client_socket) {
 	const char* title = "Home Page";
 	hash_table_insert(ht, "title", VAL_STRING, title, strlen(title) + 1);
 
-	Vector* users = query_user(global.db, Users_Query_All, NULL, NULL);
-	hash_table_insert(ht, "users", VAL_ARRAY, users, sizeof(*users));
+	Vector* posts = query_post(global.db, Posts_Query_All, NULL);
+	hash_table_insert(ht, "posts", VAL_ARRAY, posts, sizeof(*posts));
 
 	render_template(client_socket, "index.html", ht);
 

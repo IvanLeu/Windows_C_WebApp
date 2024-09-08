@@ -7,7 +7,7 @@ field_metadata post_metadata[] = {
    FIELD_METADATA(Post, id, "size_t"),
    FIELD_METADATA(Post, title, "string"),
    FIELD_METADATA(Post, content, "string"),
-   FIELD_METADATA(Post, author, "User_PTR"),
+   FIELD_METADATA(Post, author, "User*"),
    FIELD_METADATA(Post, creation_date, "string"),
    METADATA_TERMINATOR //terminator
 };
@@ -34,15 +34,17 @@ static const char* date_format_dmy(time_t time_in) {
 	const unsigned short year = 1900 + (unsigned short)tm.tm_year;
 	const unsigned short month = (unsigned short)tm.tm_mon + 1;
 	const unsigned short mday = (unsigned short)tm.tm_mday;
+	const unsigned short hour = (unsigned short)tm.tm_hour;
+	const unsigned short min = (unsigned short)tm.tm_min;
 
-	sprintf(out_string, "%s %hu, %hu", months_en[month], mday, year);
+	sprintf(out_string, "%s %hu, %hu, %hu:%hu", months_en[month], mday, year, hour, min);
 
 	return out_string;
 }
 
 Post* create_post() {
 	Post* post = malloc(sizeof(Post));
-	post->author = NULL;
+	post->author = malloc(sizeof(User));
 	post->title = malloc(256);
 	post->content = malloc(1024);
 	post->creation_date = malloc(256);
@@ -51,6 +53,7 @@ Post* create_post() {
 }
 
 void delete_post(Post* post) {
+	free(post->author);
 	free(post->title);
 	free(post->content);
 	free(post->creation_date);
@@ -81,7 +84,7 @@ void insert_post(sqlite3* db, const char* title, const char* content, User* auth
 	char* creation_date = date_format_dmy(current_time);
 
 	char sql[256];
-	sprintf(sql, "INSERT INTO posts(author_id, title, content, creation_date) VALUES (%zu, '%s', '%s');", author->id, title, content, creation_date);
+	sprintf(sql, "INSERT INTO posts(author_id, title, content, creation_date) VALUES (%zu, '%s', '%s', '%s');", author->id, title, content, creation_date);
 	char* err_msg = 0;
 	int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
 	if (rc != SQLITE_OK) {
@@ -120,7 +123,7 @@ Vector* query_post(sqlite3* db, Post_Query_Type query_type, const char* key) {
 		return NULL;
 	}
 
-	Vector* v = vector_create(sizeof(User), 16);
+	Vector* v = vector_create(sizeof(Post), 10);
 
 	while (sqlite3_step(stmt) == SQLITE_ROW) {
 		Post* post = create_post();

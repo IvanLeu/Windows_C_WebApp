@@ -3,8 +3,10 @@
 {% block %}
 <h1>Index Page</h1>
 
-{% FOR user : users %}
-<p>Name is - {{ user.name }}</p>
+{% FOR post : posts %}
+<p>{{ post.title }}</p>
+<p>{{ post.content }}</p>
+<p>{{ post.creation_date }}</p>
 {% ENDFOR %}
 
 {% endblock %}

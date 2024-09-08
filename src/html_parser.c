@@ -252,7 +252,8 @@ void process_template_data(char** pp_data, HashTable* ht) {
 		body[body_size] = 0;
 		// new body that will replace whole for-loop block after all processing is done
 		const int new_body_size = body_size * vector_size(v);
-		char* new_body = malloc(new_body_size + 1);
+		// we will take twice as much memory, because can't really predict how big new body will be
+		char* new_body = malloc(new_body_size * 2 + 1);
 
 		char* new_body_iterator = new_body; // move the ptr each iteration by the size of the proccessed loop body
 		for (int i = 0; i < vector_size(v); i++) {
@@ -260,6 +261,7 @@ void process_template_data(char** pp_data, HashTable* ht) {
 			// while loop will parse this copy of body to avoid body modification
 			char* temp_body = strdup(body);
 
+			int temp_body_size = 0;
 			//replace vars with values
 			const char* begin_statement;
 			while ((begin_statement = strstr(temp_body, "{{")) != NULL) {
@@ -314,19 +316,20 @@ void process_template_data(char** pp_data, HashTable* ht) {
 						}
 
 						temp_body = str_replace(temp_body, statement, replace_with);
-						memcpy(new_body_iterator, temp_body, body_size);
-						new_body_iterator += strlen(temp_body);
 						free(statement);
 						break;
 					}
 				}
 				
 			}
-
+			temp_body_size = strlen(temp_body);
+			memcpy(new_body_iterator, temp_body, temp_body_size);
+			new_body_iterator += temp_body_size;
 			free(temp_body);
 
 		}
-		new_body[new_body_size] = 0;
+		const int new_body_end_index = new_body_iterator - new_body;
+		new_body[new_body_end_index] = 0;
 
 		*pp_data = str_replace(data, before_loop, new_body);
 		//maybe free data??
